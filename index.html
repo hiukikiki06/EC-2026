@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ROBOT BLE v2</title>
+<style>
+:root {
+  --bg: #080810;
+  --panel: #0f0f1a;
+  --border: #1a1a2e;
+  --accent: #00f5a0;
+  --blue: #00c3ff;
+  --red: #ff3d5a;
+  --yellow: #ffd230;
+  --text: #dde0f0;
+  --muted: #44445a;
+  --r: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Courier New', monospace;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; padding: 10px; gap: 8px;
+}
+
+/* ── HEADER ── */
+.hdr {
+  width: 100%; max-width: 460px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 10px 14px;
+}
+.hdr-title { font-size: 13px; letter-spacing: 3px; color: var(--accent); font-weight: bold; }
+.dot { width: 9px; height: 9px; border-radius: 50%;
+       background: var(--red); box-shadow: 0 0 8px var(--red); transition: all .3s; }
+.dot.on { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.hdr-right { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--muted); }
+
+/* ── CONNECT ── */
+.btn-conn {
+  width: 100%; max-width: 460px;
+  padding: 13px; border-radius: var(--r);
+  border: 1px solid var(--accent); background: transparent;
+  color: var(--accent); font-family: inherit;
+  font-size: 12px; letter-spacing: 2px; font-weight: bold; cursor: pointer;
+  transition: all .15s;
+}
+.btn-conn:active { background: var(--accent); color: var(--bg); }
+.btn-conn.off { border-color: var(--red); color: var(--red); }
+
+/* ── CARD ── */
+.card {
+  width: 100%; max-width: 460px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px;
+}
+.card-title {
+  font-size: 9px; letter-spacing: 3px; color: var(--muted);
+  margin-bottom: 10px; text-transform: uppercase;
+}
+
+/* ── STATUS DASHBOARD ── */
+.dash { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stat-box {
+  background: #0a0a14; border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 10px;
+}
+.stat-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+.stat-val { font-size: 14px; font-weight: bold; color: var(--accent); }
+.stat-val.blue { color: var(--blue); }
+.stat-val.yellow { color: var(--yellow); }
+.stat-val.red { color: var(--red); }
+
+/* Pattern bar */
+.pat-bar { display: flex; gap: 3px; margin-top: 4px; }
+.pat-bit {
+  flex: 1; height: 18px; border-radius: 4px;
+  background: var(--border); transition: background .1s;
+}
+.pat-bit.on { background: var(--accent); box-shadow: 0 0 6px var(--accent)88; }
+
+/* ── MODE PILLS ── */
+.mode-row { display: flex; gap: 8px; }
+.mode-pill {
+  flex: 1; padding: 12px 6px; border-radius: 10px;
+  border: 1px solid var(--border); background: #0a0a14;
+  color: var(--muted); font-family: inherit;
+  font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  text-align: center; transition: all .15s;
+}
+.mode-pill:active { transform: scale(.95); }
+.mode-pill.manual { border-color: var(--blue)66; color: var(--blue); }
+.mode-pill.auto   { border-color: var(--accent)66; color: var(--accent); }
+.mode-pill.active-m { background: var(--blue)20; border-color: var(--blue); box-shadow: 0 0 10px var(--blue)44; }
+.mode-pill.active-a { background: var(--accent)20; border-color: var(--accent); box-shadow: 0 0 10px var(--accent)44; }
+
+/* ── SPEED SLIDER ── */
+.spd-row { display: flex; align-items: center; gap: 10px; }
+.spd-val { font-size: 18px; font-weight: bold; color: var(--yellow); min-width: 38px; text-align: right; }
+input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 6px;
+  border-radius: 3px; background: var(--border); outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--yellow);
+  box-shadow: 0 0 8px var(--yellow)88; cursor: pointer;
+}
+
+/* ── D-PAD ── */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 220px;
+  margin: 0 auto;
+}
+.dp {
+  aspect-ratio: 1;
+  background: #0a0a14; border: 1px solid var(--border);
+  border-radius: 12px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer;
+  transition: all .1s; user-select: none;
+}
+.dp:active, .dp.pr {
+  background: var(--accent)18; border-color: var(--accent);
+  box-shadow: 0 0 14px var(--accent)44; transform: scale(.92);
+}
+.dp.stop {
+  font-size: 11px; letter-spacing: 1px; font-weight: bold;
+  color: var(--red); border-color: var(--red)44; background: var(--red)10;
+}
+.dp.stop:active { background: var(--red)25; border-color: var(--red); box-shadow: 0 0 14px var(--red)44; }
+.dp-empty { visibility: hidden; }
+
+/* ── GRIP ── */
+.grip-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grp {
+  padding: 16px 8px; border-radius: 12px;
+  border: 1px solid var(--border); background: #0a0a14;
+  font-family: inherit; cursor: pointer;
+  text-align: center; transition: all .15s; user-select: none;
+}
+.grp .ico { font-size: 22px; display: block; margin-bottom: 5px; }
+.grp .lbl { font-size: 10px; letter-spacing: 1px; }
+.grp.kep  { border-color: var(--yellow)55; color: var(--yellow); }
+.grp.tha  { border-color: var(--blue)55;   color: var(--blue);   }
+.grp.kep:active { background: var(--yellow)18; box-shadow: 0 0 12px var(--yellow)44; transform: scale(.95); }
+.grp.tha:active { background: var(--blue)18;   box-shadow: 0 0 12px var(--blue)44;   transform: scale(.95); }
+
+/* ── LOG ── */
+.log {
+  width: 100%; max-width: 460px;
+  background: #050509; border: 1px solid var(--border);
+  border-radius: var(--r); padding: 8px 12px;
+  height: 70px; overflow-y: auto;
+  font-size: 10px; color: var(--muted); line-height: 1.7;
+}
+.log .li  { color: var(--accent); }
+.log .err { color: var(--red); }
+.log .rx  { color: var(--blue); }
+
+/* DISABLED */
+body.disc .dp:not(.stop), body.disc .grp,
+body.disc .mode-pill, body.disc input[type=range]
+{ opacity: .3; pointer-events: none; }
+</style>
+</head>
+<body class="disc">
+
+<!-- HEADER -->
+<div class="hdr">
+  <span class="hdr-title">ROBOT BLE</span>
+  <div class="hdr-right">
+    <div class="dot" id="dot"></div>
+    <span id="connTxt">CHƯA KẾT NỐI</span>
+  </div>
+</div>
+
+<!-- CONNECT -->
+<button class="btn-conn" id="btnConn" onclick="toggleConn()">⚡ KẾT NỐI BLE</button>
+
+<!-- DASHBOARD -->
+<div class="card">
+  <div class="card-title">◈ TRẠNG THÁI</div>
+  <div class="dash">
+    <div class="stat-box">
+      <div class="stat-label">MODE</div>
+      <div class="stat-val" id="sMode">IDLE</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">CASE</div>
+      <div class="stat-val blue" id="sCase">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">POSITION</div>
+      <div class="stat-val yellow" id="sPos">3500</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">ERROR</div>
+      <div class="stat-val red" id="sErr">0</div>
+    </div>
+  </div>
+  <!-- Pattern -->
+  <div style="margin-top:8px;">
+    <div class="stat-label" style="margin-bottom:5px;">SENSOR PATTERN</div>
+    <div class="pat-bar" id="patBar">
+      <div class="pat-bit" id="b0"></div>
+      <div class="pat-bit" id="b1"></div>
+      <div class="pat-bit" id="b2"></div>
+      <div class="pat-bit" id="b3"></div>
+      <div class="pat-bit" id="b4"></div>
+      <div class="pat-bit" id="b5"></div>
+      <div class="pat-bit" id="b6"></div>
+      <div class="pat-bit" id="b7"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODE -->
+<div class="card">
+  <div class="card-title">◈ CHẾ ĐỘ</div>
+  <div class="mode-row">
+    <div class="mode-pill manual" id="pmManual" onclick="setManual()">🕹 MANUAL</div>
+    <div class="mode-pill auto"   id="pmAuto"   onclick="setAuto()">🤖 AUTO</div>
+  </div>
+</div>
+
+<!-- SPEED -->
+<div class="card">
+  <div class="card-title">◈ TỐC ĐỘ</div>
+  <div class="spd-row">
+    <span style="font-size:11px;color:var(--muted)">30</span>
+    <input type="range" id="spdSlider" min="30" max="255" value="100"
+           oninput="onSpeedChange(this.value)" onchange="sendSpeed(this.value)">
+    <span style="font-size:11px;color:var(--muted)">255</span>
+    <span class="spd-val" id="spdVal">100</span>
+  </div>
+</div>
+
+<!-- D-PAD -->
+<div class="card">
+  <div class="card-title">◈ DI CHUYỂN</div>
+  <div class="dpad">
+    <div class="dp-empty"></div>
+    <div class="dp" id="dFWD"
+         ontouchstart="press('FWD',this)" ontouchend="release()"
+         onmousedown="press('FWD',this)" onmouseup="release()">▲</div>
+    <div class="dp-empty"></div>
+
+    <div class="dp" id="dLFT"
+         ontouchstart="press('LFT',this)" ontouchend="release()"
+         onmousedown="press('LFT',this)" onmouseup="release()">◀</div>
+    <div class="dp stop" onclick="send('STP')">STOP</div>
+    <div class="dp" id="dRGT"
+         ontouchstart="press('RGT',this)" ontouchend="release()"
+         onmousedown="press('RGT',this)" onmouseup="release()">▶</div>
+
+    <div class="dp-empty"></div>
+    <div class="dp" id="dBWD"
+         ontouchstart="press('BWD',this)" ontouchend="release()"
+         onmousedown="press('BWD',this)" onmouseup="release()">▼</div>
+    <div class="dp-empty"></div>
+  </div>
+</div>
+
+<!-- GRIP -->
+<div class="card">
+  <div class="card-title">◈ GẮP / THẢ</div>
+  <div class="grip-row">
+    <div class="grp kep"
+         ontouchstart="send('GRP')" onmousedown="send('GRP')">
+      <span class="ico">🦾</span><span class="lbl">KẸP</span>
+    </div>
+    <div class="grp tha"
+         ontouchstart="send('REL')" onmousedown="send('REL')">
+      <span class="ico">🤲</span><span class="lbl">THẢ</span>
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="log" id="logBox">
+  <div class="li">» Sẵn sàng kết nối...</div>
+</div>
+
+<script>
+const SVC_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const RX_UUID  = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const TX_UUID  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+let device, rxChar, txChar;
+let connected = false;
+let pressTimer = null;
+let speed = 100;
+
+// ── LOG ──
+function log(msg, cls='li') {
+  const box = document.getElementById('logBox');
+  const el = document.createElement('div');
+  el.className = cls;
+  el.textContent = '» ' + msg;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+  while (box.children.length > 40) box.removeChild(box.firstChild);
+}
+
+// ── CONNECT ──
+async function toggleConn() {
+  if (connected) { device?.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) {
+    log('Không hỗ trợ Web BLE! Dùng Chrome Android', 'err'); return;
+  }
+  try {
+    log('Đang quét ROBOT_BLE...');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ROBOT_BLE' }],
+      optionalServices: [SVC_UUID]
+    });
+    device.addEventListener('gattserverdisconnected', onDisc);
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(SVC_UUID);
+    rxChar = await service.getCharacteristic(RX_UUID);
+    txChar = await service.getCharacteristic(TX_UUID);
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', onNotify);
+    setConn(true);
+    log('Kết nối: ' + device.name);
+  } catch(e) { log('Lỗi: ' + e.message, 'err'); }
+}
+
+function onDisc() { setConn(false); log('Ngắt kết nối', 'err'); }
+
+function setConn(v) {
+  connected = v;
+  document.getElementById('dot').className    = 'dot' + (v ? ' on' : '');
+  document.getElementById('connTxt').textContent = v ? 'ĐÃ KẾT NỐI' : 'CHƯA KẾT NỐI';
+  document.getElementById('btnConn').textContent = v ? '✕ NGẮT KẾT NỐI' : '⚡ KẾT NỐI BLE';
+  document.getElementById('btnConn').className  = 'btn-conn' + (v ? ' off' : '');
+  document.body.className = v ? '' : 'disc';
+}
+
+// ── NOTIFY (nhận JSON từ ESP32) ──
+function onNotify(e) {
+  const raw = new TextDecoder().decode(e.target.value);
+
+  // LOG message
+  if (raw.startsWith('LOG:')) {
+    log('[RX] ' + raw.substring(4), 'rx'); return;
+  }
+
+  // JSON status
+  try {
+    const d = JSON.parse(raw);
+    if (d.mode !== undefined) document.getElementById('sMode').textContent = d.mode;
+    if (d.case !== undefined) document.getElementById('sCase').textContent = d.case;
+    if (d.pos  !== undefined) document.getElementById('sPos').textContent  = d.pos;
+    if (d.err  !== undefined) document.getElementById('sErr').textContent  = d.err;
+    if (d.spd  !== undefined) {
+      document.getElementById('spdSlider').value = d.spd;
+      document.getElementById('spdVal').textContent = d.spd;
+      speed = d.spd;
+    }
+    if (d.pat !== undefined) updatePattern(d.pat);
+
+    // Highlight mode pills từ ESP32
+    if (d.mode === 'MANUAL') activateMode('manual');
+    else if (d.mode === 'AUTO') activateMode('auto');
+  } catch(err) {
+    log('[RX] ' + raw, 'rx');
+  }
+}
+
+function updatePattern(pat) {
+  for (let i = 0; i < 8; i++) {
+    const el = document.getElementById('b' + i);
+    if (el) el.className = 'pat-bit' + (pat[i] === '1' ? ' on' : '');
+  }
+}
+
+// ── SEND ──
+async function send(cmd) {
+  if (!connected || !rxChar) return;
+  try {
+    await rxChar.writeValueWithoutResponse(new TextEncoder().encode(cmd));
+    log('[TX] ' + cmd);
+  } catch(e) { log('Lỗi gửi: ' + e.message, 'err'); }
+}
+
+// ── SPEED ──
+function onSpeedChange(v) {
+  speed = parseInt(v);
+  document.getElementById('spdVal').textContent = v;
+}
+function sendSpeed(v) {
+  speed = parseInt(v);
+  send('SPD:' + v);
+}
+
+// ── D-PAD ──
+function press(cmd, el) {
+  el.classList.add('pr');
+  send(cmd);
+  if (pressTimer) clearInterval(pressTimer);
+  pressTimer = setInterval(() => send(cmd), 120);
+}
+function release() {
+  document.querySelectorAll('.dp').forEach(b => b.classList.remove('pr'));
+  if (pressTimer) { clearInterval(pressTimer); pressTimer = null; }
+  send('STP');
+}
+
+// ── MODE ──
+function setManual() { send('MANUAL'); activateMode('manual'); }
+function setAuto()   { send('AUTO');   activateMode('auto');   }
+
+function activateMode(m) {
+  document.getElementById('pmManual').className = 'mode-pill manual' + (m==='manual' ? ' active-m' : '');
+  document.getElementById('pmAuto').className   = 'mode-pill auto'   + (m==='auto'   ? ' active-a' : '');
+}
+
+// Chặn scroll khi dùng nút
+document.querySelectorAll('.dp, .grp').forEach(el => {
+  el.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  el.addEventListener('touchend',   e => e.preventDefault(), { passive: false });
+});
+</script>
+</body>
+</html>
